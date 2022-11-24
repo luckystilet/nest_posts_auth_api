@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/sequelize'
 import { RolesService } from '../roles/roles.service'
 import { AddRoleDto } from './dto/add-role.dto'
@@ -8,8 +8,10 @@ import { User } from './users.model'
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User) private userRepository: typeof User,
-    private roleService: RolesService) {}
+  constructor(
+    @InjectModel(User) private userRepository: typeof User,
+    private roleService: RolesService,
+  ) {}
 
   async createUser(dto: CreateUserDto) {
     const user = await this.userRepository.create(dto)
@@ -30,10 +32,25 @@ export class UsersService {
   }
 
   async addRole(dto: AddRoleDto) {
-
+    const user = await this.getUser(dto.userId)
+    const role = await this.roleService.getRoleByValue(dto.value)
+    if (role && user) {
+      await user.$add('role', role.id)
+      return dto
+    }
+    throw new HttpException('User or role are invalid', HttpStatus.NOT_FOUND)
   }
 
   async ban(dto: BanUserDto) {
+    const user = await this.getUser(dto.userId)
+    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND)
+    user.banned = true
+    user.banReason = dto.banReason
+    await user.save()
+    return user
+  }
 
+  private async getUser(userId: number): Promise<User> {
+    return this.userRepository.findByPk(userId)
   }
 }

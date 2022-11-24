@@ -8,8 +8,8 @@ import { AuthService } from './auth.service'
 export class AuthController {
   constructor(private authService: AuthService) {}
   @Post('/login')
-  login(@Body() suerDto: CreateUserDto) {
-    return this.authService.login(suerDto)
+  login(@Body() userDto: CreateUserDto) {
+    return this.authService.login(userDto)
   }
 
   @Post('registration')
